@@ -1,0 +1,68 @@
+# Root .gitignore for Vision Assistant Project
+
+# Python / Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Models, Weights & Media
+*.pt
+*.pth
+*.onnx
+*.bin
+*.engine
+weights/
+models/*.pt
+models/*.onnx
+models/insightface/*
+datasets/
+runs/
+outputs/*
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Flutter & Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.symbols
+
+# Android
+**/.gradle/
+**/local.properties
+**/captures/
+**/GeneratedPluginRegistrant.java
+**/key.properties
+**/*.keystore
+**/*.jks
+
+# iOS
+**/Pods/
+**/DerivedData/
+**/.symlinks/
+**/xcuserdata/
+**/GeneratedPluginRegistrant.*
+
+# IDEs & System
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
