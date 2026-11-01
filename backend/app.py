@@ -535,4 +535,6 @@ def delete_face_api(name: str, _: None = Depends(require_key)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=settings.DEBUG)
