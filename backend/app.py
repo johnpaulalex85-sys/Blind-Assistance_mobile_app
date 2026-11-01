@@ -8,6 +8,7 @@ import psutil
 from contextlib import asynccontextmanager
 import hmac
 from fastapi import FastAPI, Response, status, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Header, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from config import settings
@@ -81,6 +82,14 @@ app = FastAPI(
     version=settings.VERSION,
     description="Optimized AI assistant for visually impaired people with real-time walking assistance",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
