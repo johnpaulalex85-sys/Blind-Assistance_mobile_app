@@ -60,167 +60,342 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final cam = s.camera.controller;
+    final r = s.last;
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            _StatusBar(s),
-            Expanded(
-              child: Center(
-                child: (s.running && cam != null && cam.value.isInitialized)
-                    ? AspectRatio(
-                        aspectRatio: 1 / cam.value.aspectRatio,
-                        child: ExcludeSemantics(
-                          child: Stack(fit: StackFit.expand, children: [
-                            CameraPreview(cam),
-                            CustomPaint(painter: OverlayPainter(s.last, s.frameSize)),
-                          ]),
+      backgroundColor: const Color(0xFF090D16),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = constraints.biggest;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // 1. FULLSCREEN CAMERA FEED (matching web client video viewport)
+              if (s.running && cam != null && cam.value.isInitialized)
+                SizedOverflowBox(
+                  size: size,
+                  alignment: Alignment.center,
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: cam.value.previewSize?.height ?? size.width,
+                      height: cam.value.previewSize?.width ?? size.height,
+                      child: CameraPreview(cam),
+                    ),
+                  ),
+                )
+              else
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(color: Color(0xFF38BDF8)),
+                        const SizedBox(height: 16),
+                        Text(
+                          s.error ?? 'Starting camera feed…',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white70, fontSize: 16),
                         ),
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(s.error ?? 'Starting camera…', textAlign: TextAlign.center),
-                      ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // 2. NEON GLOWING BOUNDING BOXES & WALKING CORRIDOR OVERLAY
+              if (s.running && cam != null && cam.value.isInitialized)
+                CustomPaint(
+                  painter: OverlayPainter(s.last, s.frameSize),
+                  size: size,
+                ),
+
+              // 3. TOP-LEFT GLASS BADGE: Vision Assistant AI
+              Positioned(
+                top: 12,
+                left: 12,
+                child: SafeArea(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xCC0F172A),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withOpacity(0.18)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: s.link == LinkState.connected
+                                ? const Color(0xFF10B981)
+                                : (s.link == LinkState.connecting ? Colors.amber : Colors.redAccent),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: s.link == LinkState.connected
+                                    ? const Color(0xFF10B981)
+                                    : (s.link == LinkState.connecting ? Colors.amber : Colors.redAccent),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Vision Assistant AI',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              s.link == LinkState.connected
+                                  ? 'Live Walking Safety Feed'
+                                  : (s.link == LinkState.connecting ? 'Connecting…' : 'Disconnected'),
+                              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
-            _Controls(s, onSettings: _openSettings),
-          ],
-        ),
+
+              // 4. TOP-RIGHT TELEMETRY HUD BAR (Latency & Detections)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: SafeArea(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xCC0F172A),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.18)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.speed, size: 14, color: Color(0xFF38BDF8)),
+                        const SizedBox(width: 6),
+                        Text(
+                          r != null ? '${r.inferenceMs.round()} ms' : '--',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF38BDF8),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          r != null ? '${r.detections.length} objs' : '--',
+                          style: const TextStyle(fontSize: 12, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 5. TOP-CENTER HAZARD ALERT BANNER
+              if (r != null && r.hazardAlert.isNotEmpty)
+                Positioned(
+                  top: 72,
+                  left: 16,
+                  right: 16,
+                  child: SafeArea(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: r.isUrgent ? const Color(0xEEEF4444) : const Color(0xEEF59E0B),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (r.isUrgent ? Colors.red : Colors.orange).withOpacity(0.6),
+                            blurRadius: 18,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            r.isUrgent ? Icons.warning_amber_rounded : Icons.info_outline,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              r.hazardAlert,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+              // 6. FLOATING BOTTOM FROSTED GLASS CONTROLS
+              Positioned(
+                bottom: 16,
+                left: 12,
+                right: 12,
+                child: SafeArea(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xDD0F172A),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.white.withOpacity(0.18)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.6),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _GlassButton(
+                            icon: Icons.visibility,
+                            label: 'Describe',
+                            hint: 'Describe scene',
+                            onTap: s.describe,
+                          ),
+                        ),
+                        Expanded(
+                          child: _GlassButton(
+                            icon: s.voiceOn ? Icons.mic : Icons.mic_none,
+                            label: s.voiceOn ? 'Listening' : 'Voice',
+                            hint: 'Toggle voice commands',
+                            active: s.voiceOn,
+                            activeColor: const Color(0xFFF59E0B),
+                            onTap: s.toggleVoice,
+                          ),
+                        ),
+                        Expanded(
+                          child: _GlassButton(
+                            icon: s.continuous ? Icons.pause_circle : Icons.play_circle,
+                            label: s.continuous ? 'Auto: on' : 'Auto: off',
+                            hint: 'Continuous analysis',
+                            active: s.continuous,
+                            activeColor: const Color(0xFF10B981),
+                            onTap: () => s.setContinuous(!s.continuous),
+                          ),
+                        ),
+                        Expanded(
+                          child: _GlassButton(
+                            icon: Icons.settings,
+                            label: 'Settings',
+                            hint: 'Open settings',
+                            onTap: _openSettings,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _StatusBar extends StatelessWidget {
-  const _StatusBar(this.s);
-  final AppState s;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, color) = switch (s.link) {
-      LinkState.connected => ('Connected', Colors.greenAccent),
-      LinkState.connecting => ('Connecting…', Colors.amber),
-      LinkState.disconnected => (s.running ? 'Reconnecting…' : 'Stopped', Colors.redAccent),
-    };
-    final r = s.last;
-    final alert = r?.hazardAlert ?? '';
-    return Semantics(
-      liveRegion: false,
-      label: 'Status: $label',
-      child: Container(
-        width: double.infinity,
-        color: Colors.black,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(children: [
-          Icon(Icons.circle, size: 12, color: color),
-          const SizedBox(width: 8),
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              alert.isNotEmpty ? alert : (r == null ? '' : '${r.detections.length} objects · ${r.inferenceMs.round()} ms'),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: (r?.isUrgent ?? false) ? Colors.redAccent : Colors.white70),
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
-}
-
-class _Controls extends StatelessWidget {
-  const _Controls(this.s, {required this.onSettings});
-  final AppState s;
-  final VoidCallback onSettings;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Row(children: [
-          Expanded(
-            child: _BigButton(
-              icon: Icons.visibility,
-              label: 'Describe',
-              hint: 'Describe what the camera sees',
-              onTap: s.describe,
-            ),
-          ),
-          Expanded(
-            child: _BigButton(
-              icon: s.voiceOn ? Icons.mic : Icons.mic_none,
-              label: s.voiceOn ? 'Listening' : 'Voice',
-              hint: 'Toggle voice commands',
-              active: s.voiceOn,
-              onTap: s.toggleVoice,
-            ),
-          ),
-        ]),
-        Row(children: [
-          Expanded(
-            child: _BigButton(
-              icon: s.continuous ? Icons.pause_circle : Icons.play_circle,
-              label: s.continuous ? 'Auto: on' : 'Auto: off',
-              hint: 'Toggle continuous scene analysis',
-              active: s.continuous,
-              onTap: () => s.setContinuous(!s.continuous),
-            ),
-          ),
-          Expanded(
-            child: _BigButton(
-              icon: Icons.settings,
-              label: 'Settings',
-              hint: 'Open settings and face registration',
-              onTap: onSettings,
-            ),
-          ),
-        ]),
-      ]),
-    );
-  }
-}
-
-class _BigButton extends StatelessWidget {
-  const _BigButton({
+class _GlassButton extends StatelessWidget {
+  const _GlassButton({
     required this.icon,
     required this.label,
     required this.hint,
     required this.onTap,
     this.active = false,
+    this.activeColor = const Color(0xFF38BDF8),
   });
 
   final IconData icon;
   final String label, hint;
   final VoidCallback onTap;
   final bool active;
+  final Color activeColor;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.symmetric(horizontal: 3),
       child: Semantics(
         button: true,
         label: label,
         hint: hint,
         excludeSemantics: true,
         onTap: onTap,
-        child: SizedBox(
-          height: 88,
-          child: FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              backgroundColor: active ? Colors.amber : null,
-              foregroundColor: active ? Colors.black : null,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Material(
+          color: active ? activeColor.withOpacity(0.25) : Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(18),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: onTap,
+            child: Container(
+              height: 64,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: active ? activeColor.withOpacity(0.6) : Colors.white.withOpacity(0.08),
+                  width: active ? 1.5 : 1.0,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 24, color: active ? activeColor : Colors.white),
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: active ? activeColor : Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            onPressed: onTap,
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(icon, size: 34),
-              const SizedBox(height: 4),
-              Text(label, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-            ]),
           ),
         ),
       ),

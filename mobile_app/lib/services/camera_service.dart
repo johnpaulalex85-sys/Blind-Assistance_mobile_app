@@ -51,9 +51,12 @@ Uint8List encodeFrame(FrameJob j) {
       final sy = y * step;
       for (var x = 0; x < ow; x++) {
         final sx = x * step;
-        final yy = yP[sy * yRow + sx];
-        final u = uP[(sy >> 1) * uRow + (sx >> 1) * uPix] - 128;
-        final v = vP[(sy >> 1) * vRow + (sx >> 1) * vPix] - 128;
+        final yIdx = (sy * yRow + sx).clamp(0, yP.length - 1);
+        final uIdx = ((sy >> 1) * uRow + (sx >> 1) * uPix).clamp(0, uP.length - 1);
+        final vIdx = ((sy >> 1) * vRow + (sx >> 1) * vPix).clamp(0, vP.length - 1);
+        final yy = yP[yIdx];
+        final u = uP[uIdx] - 128;
+        final v = vP[vIdx] - 128;
         final r = (yy + 1.402 * v).round().clamp(0, 255).toInt();
         final g = (yy - 0.344136 * u - 0.714136 * v).round().clamp(0, 255).toInt();
         final b = (yy + 1.772 * u).round().clamp(0, 255).toInt();
