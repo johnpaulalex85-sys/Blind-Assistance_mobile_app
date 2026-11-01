@@ -92,6 +92,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_private_network_headers(request, call_next):
+    if request.method == "OPTIONS" and "access-control-request-private-network" in request.headers:
+        response = Response(status_code=204)
+        response.headers["Access-Control-Allow-Origin"] = request.headers.get("origin", "*")
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
+    response = await call_next(request)
+    if "access-control-request-private-network" in request.headers:
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
