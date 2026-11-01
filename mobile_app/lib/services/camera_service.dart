@@ -86,10 +86,12 @@ class CameraService {
       cam,
       ResolutionPreset.medium,
       enableAudio: false,
-      imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.yuv420 : ImageFormatGroup.bgra8888,
+      imageFormatGroup: (!kIsWeb && Platform.isAndroid) ? ImageFormatGroup.yuv420 : ImageFormatGroup.bgra8888,
     );
     await c.initialize();
-    await c.lockCaptureOrientation(DeviceOrientation.portraitUp);
+    if (!kIsWeb) {
+      await c.lockCaptureOrientation(DeviceOrientation.portraitUp);
+    }
     controller = c;
   }
 
