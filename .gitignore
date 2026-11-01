@@ -44,6 +44,7 @@ build/
 
 # Android
 **/.gradle/
+**/.kotlin/
 **/local.properties
 **/captures/
 **/GeneratedPluginRegistrant.java
